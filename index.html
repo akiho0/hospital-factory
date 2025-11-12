@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>病院共創ビジネスファクトリー</title>
+<style>
+  :root { --bg:#f6f7fb; --card:#ffffff; --ink:#222; --muted:#5d6675; --brand:#2d7ef7; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI",Meiryo,sans-serif;}
+  .wrap{max-width:1080px;margin:24px auto;padding:20px}
+  h1{font-size:22px;margin:0 0 16px}
+  .grid-top{display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:center;margin-bottom:24px;}
+  .label{font-weight:700;color:var(--muted);letter-spacing:.04em;margin:0 0 8px}
+  .box{background:var(--card);border:1.5px solid #e5e7ef;border-radius:14px;min-height:130px;display:flex;align-items:center;justify-content:center;padding:22px;text-align:center;font-size:24px;line-height:1.6;box-shadow:0 2px 10px rgba(0,0,0,.03)}
+  .multiply{font-size:36px;font-weight:800;color:var(--muted);text-align:center;}
+  .controls{display:flex;flex-direction:column;align-items:center;gap:8px;margin:16px 0 8px}
+  .btn{appearance:none;border:0;border-radius:14px;padding:16px 32px;background:var(--brand);color:#fff;font-weight:700;cursor:pointer;box-shadow:0 8px 18px rgba(45,126,247,.25);font-size:18px;transition:transform .06s ease,opacity .2s}
+  .btn:active{transform:translateY(1px)}
+  .btn[disabled]{opacity:.5;cursor:not-allowed}
+  .btn-secondary{background:#eef2ff;color:#2d3a64;padding:10px 20px;font-size:14px}
+  .hint{font-size:13px;color:var(--muted);}
+  .history{background:var(--card);border:1.5px solid #e5e7ef;border-radius:14px;padding:14px;margin-top:16px;box-shadow:0 2px 10px rgba(0,0,0,.03);position:relative}
+  .history-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+  .history h2{margin:0;font-size:14px;color:var(--muted);letter-spacing:.06em}
+  .history-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+  .history-item{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center}
+  .history-item .pill{background:#f1f3f8;border-radius:999px;padding:8px 12px;text-align:center}
+  .history-item .times{color:var(--muted);font-weight:800}
+  .columns{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:18px}
+  .col-label{font-size:14px;color:var(--muted);font-weight:700;margin:0 0 8px}
+  .col{background:var(--card);border:1.5px solid #e5e7ef;border-radius:14px;padding:14px;box-shadow:0 2px 10px rgba(0,0,0,.03)}
+  .list{margin:0;padding:0;list-style:none;max-height:300px;overflow:auto}
+  .list li{padding:8px 10px;border-radius:8px}
+  .list li:nth-child(odd){background:#fafbff}
+  footer{margin-top:24px;color:var(--muted);font-size:12px;text-align:center}
+  .spin{animation:spin .6s linear infinite}
+  @keyframes spin{0%{opacity:.4}50%{opacity:1}100%{opacity:.4}}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>病院共創ビジネスファクトリー</h1>
+
+    <!-- 上段：結果表示 -->
+    <div class="grid-top">
+      <div>
+        <div class="label">病院のポテンシャル</div>
+        <div id="potBox" class="box">—</div>
+      </div>
+      <div class="multiply">×</div>
+      <div>
+        <div class="label">社会課題/ビジネスチャンステーマ</div>
+        <div id="themeBox" class="box">—</div>
+      </div>
+    </div>
+
+    <!-- 操作 -->
+    <div class="controls">
+      <button id="drawBtn" class="btn">組み合わせを選ぶ</button>
+      <label class="hint">（候補が数秒流れて確定します）</label>
+    </div>
+
+    <!-- 中段：履歴 -->
+    <div class="history" aria-live="polite">
+      <div class="history-head">
+        <h2>組み合わせ履歴（直近3件）</h2>
+        <button id="clearHist" class="btn btn-secondary" type="button">履歴を初期化</button>
+      </div>
+      <ul id="historyList" class="history-list"></ul>
+    </div>
+
+    <!-- 下段：候補一覧 -->
+    <div class="columns">
+      <div>
+        <div class="col-label">候補：病院のポテンシャル</div>
+        <div class="col"><ul id="potList" class="list"></ul></div>
+      </div>
+      <div>
+        <div class="col-label">候補：社会課題/ビジネスチャンステーマ</div>
+        <div class="col"><ul id="themeList" class="list"></ul></div>
+      </div>
+    </div>
+
+    <footer>© 組み合わせジェネレーター（簡易版）</footer>
+  </div>
+
+<script>
+  const potentials = [
+    "医師・看護師",
+    "薬剤師・栄養士",
+    "リハビリスタッフ（作業療法・理学療法）",
+    "医療通訳スタッフ",
+    "感染症対策知識",
+    "救急対応能力",
+    "外来待合スペース",
+    "会議室・講堂",
+    "院内カフェ・売店スペース",
+    "駐車場",
+    "通路・廊下・屋上スペース",
+    "病院外壁",
+    "給食室・厨房設備",
+    "来院患者",
+    "付き添い家族・介護者",
+    "紹介元・紹介先医療機関とのネットワーク",
+    "通院・送迎交通データ",
+    "地域住民からの信頼",
+    "病院広報誌・SNS発信チャネル",
+    "高齢者・障がい者対応知識",
+    "災害医療体制（DMAT経験）",
+    "医療留学生・研修生ネットワーク",
+    "退職職員OBコミュニティ",
+    "院内放送"
+  ];
+
+  const themes = [
+    "生活習慣病予防",
+    "禁煙支援",
+    "運動不足解消",
+    "睡眠改善",
+    "メンタルヘルス",
+    "独居高齢者、高齢者の社会的孤立",
+    "家族介護者の負担、老老介護問題",
+    "終末期ケア・看取り",
+    "医療アクセスにおける交通弱者",
+    "僻地への遠隔医療提供",
+    "小児科・産科の減少",
+    "救急搬送の地域格差",
+    "予防医療へのアクセス格差",
+    "パラレルキャリア・副業支援",
+    "不登校・発達障害児支援",
+    "子どもの貧困と栄養",
+    "思春期メンタル支援",
+    "アートや文化活動の不足",
+    "雇用創出の機会不足",
+    "医療ツーリズム活用不足、外国人患者受け入れ",
+    "医療廃棄物",
+    "院内フードロス",
+    "障がい者雇用と就労支援",
+    "LGBTQ+",
+    "終活・生前整理支援",
+    "社会的孤立者支援"
+  ];
+
+  const potBox = document.getElementById('potBox');
+  const themeBox = document.getElementById('themeBox');
+  const drawBtn = document.getElementById('drawBtn');
+  const clearHistBtn = document.getElementById('clearHist');
+  const historyList = document.getElementById('historyList');
+  const potList = document.getElementById('potList');
+  const themeList = document.getElementById('themeList');
+
+  function renderCandidates(){
+    potList.innerHTML = potentials.map(x=>`<li>${x}</li>`).join('');
+    themeList.innerHTML = themes.map(x=>`<li>${x}</li>`).join('');
+  }
+  renderCandidates();
+
+  function rand(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+  const history = [];
+  const usedCombos = new Set();
+
+  function comboKey(p,t){ return `${p}×${t}`; }
+
+  function pushHistory(pot, theme){
+    history.unshift({pot, theme});
+    if(history.length>3) history.pop();
+    renderHistory();
+  }
+  function renderHistory(){
+    historyList.innerHTML = history.map(h=>`
+      <li class="history-item">
+        <div class="pill">${h.pot}</div>
+        <div class="times">×</div>
+        <div class="pill">${h.theme}</div>
+      </li>`).join('');
+  }
+
+  function clearHistory(){
+    history.length = 0;
+    usedCombos.clear();
+    renderHistory();
+    potBox.textContent = '—';
+    themeBox.textContent = '—';
+  }
+
+  let rolling = false, rollTimer = null, settleTimer = null;
+
+  function chooseFinal(){
+    // 常に同じ組み合わせは避ける
+    const total = potentials.length * themes.length;
+    if(usedCombos.size >= total){
+      alert('利用できる組み合わせを使い切りました。履歴を初期化してください。');
+      return null;
+    }
+    let tries = 0;
+    while(tries < 2000){
+      const p = rand(potentials);
+      const t = rand(themes);
+      const key = comboKey(p,t);
+      if(!usedCombos.has(key)){
+        usedCombos.add(key);
+        return { pot:p, theme:t };
+      }
+      tries++;
+    }
+    // フォールバック
+    return { pot: rand(potentials), theme: rand(themes) };
+  }
+
+  function startRoll(){
+    if(rolling) return;
+    const ms = 2500; // 固定演出 2.5s
+    rolling = true;
+    drawBtn.setAttribute('disabled','true');
+    potBox.classList.add('spin');
+    themeBox.classList.add('spin');
+
+    rollTimer = setInterval(()=>{
+      potBox.textContent = rand(potentials);
+      themeBox.textContent = rand(themes);
+    }, 80);
+
+    settleTimer = setTimeout(()=>{
+      clearInterval(rollTimer);
+      potBox.classList.remove('spin');
+      themeBox.classList.remove('spin');
+      const final = chooseFinal();
+      if(!final){
+        drawBtn.removeAttribute('disabled');
+        rolling = false;
+        return;
+      }
+      const {pot: finalPot, theme: finalTheme} = final;
+      potBox.textContent = finalPot;
+      themeBox.textContent = finalTheme;
+      pushHistory(finalPot, finalTheme);
+      drawBtn.removeAttribute('disabled');
+      rolling = false;
+    }, ms);
+  }
+
+  drawBtn.addEventListener('click', startRoll);
+  clearHistBtn.addEventListener('click', clearHistory);
+</script>
+</body>
+</html>
